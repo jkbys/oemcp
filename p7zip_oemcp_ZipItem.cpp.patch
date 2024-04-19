@@ -9,10 +9,19 @@
  #include "StdAfx.h"
  
  #include "../../../../C/CpuArch.h"
-@@ -244,6 +249,86 @@
+@@ -14,6 +19,7 @@
+ #include "../Common/ItemNameUtils.h"
+ 
+ #include "ZipItem.h"
++#include <cstdlib>
+ 
+ namespace NArchive {
+ namespace NZip {
+@@ -449,7 +455,87 @@ void CItem::GetUnicodeString(UString &re
      #endif
    }
    
+-  
 +  #ifndef _WIN32
 +  // Convert OEM char set to UTF-8 if needed
 +  // Use system locale to select code page
@@ -81,18 +90,19 @@
 +      const char* src = s.Ptr();
 +      size_t slen = s.Len();
 +      size_t dlen = slen * 4;
-+      const char* dest = s_utf8.GetBuf_SetEnd(dlen + 1); // (source length * 4) + null termination
++      char* dest = s_utf8.GetBuf_SetEnd(static_cast<unsigned int>(dlen + 1)); // (source length * 4) + null termination
 +
++      memset(dest, 0, dlen + 1);
 +      size_t done = iconv(cd, (char**)&src, &slen, (char**)&dest, &dlen);
-+      bzero((size_t*)dest + done, 1);
 +
 +      iconv_close(cd);
 +
-+      if (ConvertUTF8ToUnicode(s_utf8, res) || ignore_Utf8_Errors)
++      if (done != (size_t)-1 && ConvertUTF8ToUnicode(s_utf8, res))
 +        return;
 +    }    
 +  }
 +  #endif
-   
++
    if (isUtf8)
-     if (ConvertUTF8ToUnicode(s, res) || ignore_Utf8_Errors)
+   {
+     ConvertUTF8ToUnicode(s, res);
